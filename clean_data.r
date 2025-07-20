@@ -16,7 +16,7 @@ str(us_census)
 head(us_census)
 
 # Drop first meaningless column (assuming it's the first column)
-us_census <- us_census %>% select(-1)
+us_census <- us_census %>% select(-X1)
 head(us_census)
 
 # Separate GenderPop column into male_pop and female_pop
