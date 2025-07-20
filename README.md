@@ -38,3 +38,11 @@ As a new data analyst at the Census Bureau, you're tasked with consolidating and
 
 The final output is a cleaned and deduplicated data frame `us_census`, ready for statistical analysis or visualization.
 
+To save the cleaned us_census data frame into a single CSV file in R, you can use the write_csv() function from the readr package (or write.csv() from base R).
+
+Here’s how to do it with readr 
+
+write_csv(us_census, "us_census_cleaned.csv")
+
+
+
