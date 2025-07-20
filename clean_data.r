@@ -1,209 +1,53 @@
----
-title: "Cleaning US Census Data"
-output: html_notebook
----
+# Cleaning US Census Data
 
-```{r message=FALSE, warning=FALSE, error=TRUE}
-# load libraries
-
+# Load libraries
 library(readr)
 library(dplyr)
 library(tidyr)
 
-```
-
-```{r message=FALSE, warning=FALSE, error=TRUE}
-# load CSVs
-
-# Creates a variable called files, sets it equal to the list.files() of all the csv files to import
+# Load CSV files matching pattern
 files <- list.files(pattern = "states_.*csv")
-
-# Reads each file in files into a data frame using lapply() and saves the result to df_list
-df_list <- lapply(files,read_csv)
-
-# Concatenates all of the data frames in df_list into one data frame called us_census.
+df_list <- lapply(files, read_csv)
 us_census <- bind_rows(df_list)
 
-
-```
-
-```{r error=TRUE}
-# inspect data
-
-# Inspects the us_census data frame by printing the column names, looking at the data types with str(), and viewing the head().
-
+# Inspect data (optional)
 colnames(us_census)
 str(us_census)
 head(us_census)
 
-# Checkpoint: What columns have symbols that will prevent calculations? What are the data types of the columns? Do any columns contain multiple kinds of information?
-
-```
-
-```{r error=TRUE}
-# drop X1 column
-
-# When inspecting us_census you notice a column X1 that stores meaningless information. 
-# Drop the X1 column from us_census, and save the resulting data frame to us_census. 
-# View the head of us_census.
-
-us_census <- us_census %>% select(-X1)
+# Drop first meaningless column (assuming it's the first column)
+us_census <- us_census %>% select(-1)
 head(us_census)
 
-```
-
-```{r error=TRUE}
-# remove % from race columns
-# You notice that there are 6 columns representing the population percentage for different races. 
-# The columns include the percent symbol %.
-# Remove the percent symbol % from each of the race columns (Hispanic,White,Black,Native,Asian,Pacific). 
-# Save the resulting data frame to us_census, and view the head.
-
-us_census <- us_census %>% 
-  mutate(Hispanic=gsub('\\%','',Hispanic),
-         White=gsub('\\%','',White),
-         Black=gsub('\\%','',Black),
-         Native=gsub('\\%','',Native),
-         Asian=gsub('\\%','',Asian),
-         Pacific=gsub('\\%','',Pacific))
-
-head(us_census)
-
-```
-
-```{r error=TRUE}
-# remove $ from Income column
-
-# Removes the $ from the Income column. Save the resulting data frame to us_census. 
-
-us_census <- us_census%>%
-  mutate(Income=gsub('\\$','',Income))
-
-# View the head of us_census.
-
-head(us_census)
-
-```
-
-```{r error=TRUE}
-# separate GenderPop column
-
-# The GenderPop column appears to hold the male and female population counts. 
-# Separate this column at the _ character to create two new columns: male_pop and female_pop. 
-# Save the resulting data frame to us_census, and view the head.
-
+# Separate GenderPop column into male_pop and female_pop
 us_census <- us_census %>%
-  separate(GenderPop,c('male_pop','female_pop'),'_')
-
+  separate(GenderPop, c('male_pop', 'female_pop'), '_')
 head(us_census)
 
-```
-
-```{r error=TRUE}
-# clean male and female population columns
-
-# You notice the new male_pop and female_pop columns contain extra characters M and F, respectively. 
-# Remove these extra characters from the columns. 
-# Save the resulting data frame to us_census, and view the head.
-
+# Clean race percentage columns, Income, male_pop, and female_pop
 us_census <- us_census %>%
-  mutate(male_pop=gsub('M','',male_pop),
-        female_pop=gsub('F','',female_pop))
-
+  mutate(across(c(Hispanic, White, Black, Native, Asian, Pacific),
+                ~ as.numeric(gsub("%", "", trimws(.))) / 100),
+         Income = as.numeric(gsub("\\$", "", trimws(Income))),
+         male_pop = as.numeric(gsub("M", "", trimws(male_pop))),
+         female_pop = as.numeric(gsub("F", "", trimws(female_pop)))
+  )
 head(us_census)
 
-```
-
-```{r error=TRUE}
-# update column data types
-
-# Now that you have removed extra symbols from many of the columns that contain numerical data, you notice that the data type for these columns is still chr, or character. 
-# Convert all of these columns (Hispanic,White,Black,Native,Asian,Pacific,Income,male_pop,female_pop) to have a data type of numeric.
-# Save the resulting data frame to us_census, and view the head.
-
-us_census <- us_census %>%
-  mutate(Hispanic = as.numeric(Hispanic),
-         White = as.numeric(White),
-         Black = as.numeric(Black),
-         Native = as.numeric(Native),
-         Asian = as.numeric(Asian),
-         Pacific = as.numeric(Pacific),
-         Income = as.numeric(Income),
-         male_pop = as.numeric(male_pop),
-         female_pop = as.numeric(female_pop))
-
-head(us_census)
-
-```
-
-```{r error=TRUE}
-# update values of race columns
-
-# Take a second to look back at the Hispanic, White, Black, Native, Asian, and Pacific columns. 
-# The columns represent the population percentage for each race. 
-# Earlier you removed the % symbol, and then you just converted the column to numeric type. 
-# To make calculations easier, the column should now represent percentages in decimal form, where 50% is equivalent to 0.50. 
-# Update the values of these columns to be in decimal form, and save the resulting data frame to us_census. 
-# View the head of us_census.
-
-us_census <- us_census %>%
- mutate(Hispanic = Hispanic/100,
-        White = White/100,
-        Black = Black/100,
-        Native = Native/100,
-        Asian = Asian/100,
-        Pacific = Pacific/100)
-
-head(us_census)
-
-# Dividing each column by 100 converts the percentage value into decimal form.
-# To convert the percentage population columns to decimal form using dplyr, you can use the above syntax.
-
-```
-
-```{r error=TRUE}
-# check for duplicate rows
-
-# Pipes us_census into the duplicated() function to see which rows are duplicated. 
-# Then pipes the result into table() to get a count of the duplicated rows.
-
+# Check for duplicate rows
 us_census %>%
   duplicated() %>%
   table()
 
-# The number of TRUEs indicates how many rows are duplicates. In this dataframe, FALSE 52 and TRUE 9.
-
-```
-
-```{r error=TRUE}
-# remove duplicate rows
-
-# Since there are duplicates, update the value of us_census to be the us_census data frame with only unique/distinct rows.
-
+# Remove duplicate rows
 us_census <- us_census %>%
   distinct()
 
-```
-
-```{r error=TRUE}
-# check for duplicate rows
-
-# Confirm that there are no more duplicated rows in us_census. 
-# Pipe us_census into the duplicated() function to see which rows are duplicated. 
-# Then pipe the result into table() to get a count of the duplicated rows.
-# You should expect to see no TRUEs!
-
+# Confirm duplicates removed
 us_census %>%
   duplicated() %>%
   table()
 
-# Output: FALSE 52
+# Write cleaned data to CSV
+write_csv(us_census, "us_census_cleaned.csv")
 
-```
-
-```{r error=TRUE}
-# clean data frame
-
-head(us_census)
-
-```
