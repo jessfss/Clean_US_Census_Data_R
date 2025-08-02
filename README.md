@@ -31,7 +31,7 @@ As a new data analyst at the Census Bureau, you're tasked with consolidating and
 ## How to Run
 
 1. Place all `states_*.csv` files in your working directory.
-2. Open and run `notebook.Rmd` or a corresponding R script.
+2. Open and run the corresponding R script.
 3. Follow the logical cleaning steps outlined to transform the raw census data into a clean `us_census` data frame.
 
 ## Data Output
